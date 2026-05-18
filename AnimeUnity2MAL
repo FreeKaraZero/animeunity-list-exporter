@@ -1,0 +1,207 @@
+#!/usr/bin/env python3
+"""
+AnimeUnity to MyAnimeList/AniList Exporter
+Converte una lista HTML salvata dal profilo AnimeUnity in un file XML 
+perfettamente formattato e pronto per l'importazione su MAL o AniList.
+"""
+
+import argparse
+import json
+import re
+import time
+import requests
+from bs4 import BeautifulSoup
+
+ANILIST_API_URL = 'https://graphql.anilist.co'
+
+def clean_title_for_api(title):
+    """Pulisce il titolo dalle peggiori localizzazioni e tag."""
+    c_title = title.replace("(ITA)", "").strip()
+    c_title = c_title.replace("Le Bizzarre Avventure di ", "")
+    c_title = c_title.replace(" - L'ospite indesiderato", "")
+    c_title = c_title.replace(" - La leggenda di Aang", "")
+    # Via tutto quello che è tra parentesi tonde o quadre
+    c_title = re.sub(r'\(.*?\)|\[.*?\]', '', c_title).strip()
+    return c_title
+
+def parse_animeunity_html(html_file):
+    """Estrae i dati degli anime dal file HTML di AnimeUnity."""
+    print(f"[*] Parsing dell'HTML: {html_file}...")
+    try:
+        with open(html_file, 'r', encoding='utf-8') as f:
+            soup = BeautifulSoup(f, 'html.parser')
+    except Exception as e:
+        print(f"[!] Errore nella lettura dell'HTML: {e}")
+        return []
+
+    anime_list = []
+    sections = soup.find_all('div', class_='list-section')
+    
+    for sec in sections:
+        status_tag = sec.find('h3', class_='list-title')
+        if not status_tag: 
+            continue
+        
+        status = status_tag.text.strip()
+        # Normalizzazione dello status per MAL
+        if status.lower() == 'plan to watch': 
+            status = 'Plan to Watch'
+            
+        entries = sec.find_all('div', class_='entry-card')
+        for entry in entries:
+            title_tag = entry.find('div', class_='title')
+            title = title_tag.text.strip() if title_tag else "Sconosciuto"
+            
+            progress_tag = entry.find('div', class_='progress')
+            watched = "0"
+            if progress_tag:
+                p_text = progress_tag.text.strip()
+                # progress è tipo "12/24", prendiamo solo la prima parte
+                watched = p_text.split('/')[0] if '/' in p_text else p_text
+            
+            score_tag = entry.find('div', class_='score')
+            score = "0"
+            if score_tag:
+                score_val = score_tag.find('div')
+                if score_val and score_val.text.strip():
+                    score = score_val.text.strip()
+                    
+            anime_list.append({
+                'title': title,
+                'watched': watched,
+                'score': score,
+                'status': status
+            })
+            
+    return anime_list
+
+def get_mal_id(clean_title, original_title):
+    """Interroga AniList per ottenere l'idMal."""
+    query = '''
+    query ($search: String) {
+      Media (search: $search, type: ANIME) {
+        idMal
+      }
+    }
+    '''
+    variables = {'search': clean_title}
+    
+    while True:
+        try:
+            response = requests.post(ANILIST_API_URL, json={'query': query, 'variables': variables})
+            
+            if response.status_code == 200:
+                data = response.json()
+                if data.get('data') and data['data'].get('Media'):
+                    return data['data']['Media']['idMal']
+                return None
+            
+            elif response.status_code == 429:
+                retry_after = int(response.headers.get('Retry-After', 60))
+                print(f"\n[!] Rate limit! In castigo per {retry_after} secondi...")
+                time.sleep(retry_after)
+                continue
+                
+            else:
+                return None
+                
+        except Exception as e:
+            print(f"[!] Errore di rete per '{original_title}': {e}")
+            return None
+
+def generate_bulletproof_xml(anime_list, output_file):
+    """Genera l'XML blindato che MAL/AniList non possono rifiutare."""
+    xml_output = '<?xml version="1.0" encoding="UTF-8" ?>\n'
+    xml_output += '\n'
+    xml_output += '<myanimelist>\n'
+    xml_output += '    <myinfo>\n'
+    xml_output += '        <user_id>12345</user_id>\n'
+    xml_output += '        <user_name>ImportUser</user_name>\n'
+    xml_output += '        <user_export_type>1</user_export_type>\n'
+    xml_output += f'        <user_total_anime>{len(anime_list)}</user_total_anime>\n'
+    xml_output += '    </myinfo>\n'
+
+    for anime in anime_list:
+        xml_output += '    <anime>\n'
+        xml_output += f'        <series_animedb_id>{anime["mal_id"]}</series_animedb_id>\n'
+        xml_output += f'        <series_title><![CDATA[{anime["title"]}]]></series_title>\n'
+        xml_output += '        <series_type>TV</series_type>\n'
+        xml_output += '        <series_episodes>0</series_episodes>\n'
+        xml_output += '        <my_id>0</my_id>\n'
+        xml_output += f'        <my_watched_episodes>{anime["watched"]}</my_watched_episodes>\n'
+        xml_output += '        <my_start_date>0000-00-00</my_start_date>\n'
+        xml_output += '        <my_finish_date>0000-00-00</my_finish_date>\n'
+        xml_output += '        <my_rated></my_rated>\n'
+        xml_output += f'        <my_score>{anime["score"]}</my_score>\n'
+        xml_output += '        <my_dvd></my_dvd>\n'
+        xml_output += '        <my_storage></my_storage>\n'
+        xml_output += f'        <my_status>{anime["status"]}</my_status>\n'
+        xml_output += '        <my_comments><![CDATA[]]></my_comments>\n'
+        xml_output += '        <my_times_watched>0</my_times_watched>\n'
+        xml_output += '        <my_rewatch_value></my_rewatch_value>\n'
+        xml_output += '        <my_tags><![CDATA[]]></my_tags>\n'
+        xml_output += '        <my_rewatching>0</my_rewatching>\n'
+        xml_output += '        <my_rewatching_ep>0</my_rewatching_ep>\n'
+        xml_output += '        <update_on_import>1</update_on_import>\n'
+        xml_output += '    </anime>\n'
+
+    xml_output += '</myanimelist>\n'
+
+    with open(output_file, "w", encoding="utf-8") as f:
+        f.write(xml_output)
+
+def main():
+    parser = argparse.ArgumentParser(description="Converte la lista HTML di AnimeUnity in XML per MyAnimeList/AniList.")
+    parser.add_argument("input_html", help="Il file HTML scaricato da AnimeUnity")
+    parser.add_argument("-o", "--output", default="import_mal.xml", help="Nome del file XML di output")
+    parser.add_argument("-j", "--json", default="orphans.json", help="Nome del file JSON per gli anime non trovati")
+    args = parser.parse_args()
+
+    # Step 1: Estrazione dati dall'HTML
+    raw_anime_list = parse_animeunity_html(args.input_html)
+    if not raw_anime_list:
+        print("[!] Nessun anime trovato. Sicuro che l'HTML sia corretto?")
+        return
+    
+    print(f"[*] Trovati {len(raw_anime_list)} anime. Inizio il match con le API di AniList...")
+
+    # Step 2: Fetch degli ID e smistamento
+    success_list = []
+    orphans = []
+
+    for anime in raw_anime_list:
+        clean_title = clean_title_for_api(anime['title'])
+        print(f"[*] Cerco: {clean_title} ... ", end="", flush=True)
+        
+        mal_id = get_mal_id(clean_title, anime['title'])
+        
+        if mal_id:
+            print(f"Trovato! MAL ID: {mal_id}")
+            anime['mal_id'] = mal_id
+            success_list.append(anime)
+        else:
+            print("Disperso in azione.")
+            orphans.append({
+                "original_title": anime['title'],
+                "cleaned_title": clean_title,
+                "status": anime['status'],
+                "watched": anime['watched'],
+                "score": anime['score']
+            })
+        
+        time.sleep(0.8)
+
+    # Step 3: Generazione XML
+    if success_list:
+        generate_bulletproof_xml(success_list, args.output)
+        print(f"\n[*] Finito! Generato XML per {len(success_list)} anime in: {args.output}")
+
+    # Step 4: Generazione JSON per gli orfani
+    if orphans:
+        with open(args.json, 'w', encoding='utf-8') as f:
+            json.dump(orphans, f, indent=4, ensure_ascii=False)
+        print(f"[*] Attenzione: {len(orphans)} anime non trovati. Dettagli salvati in: {args.json}")
+        print("[*] Dovrai aggiungere i tag xml a mano per questi o cercarli direttamente sul sito.")
+
+if __name__ == "__main__":
+    main()
