@@ -1,28 +1,22 @@
 # AnimeUnity List Exporter 🚀
 
-[🇮🇹 Leggi in Italiano](#-italiano) | [🇬🇧 Read in English](#-english)
+A Python script born from a specific need: **AnimeUnity does not allow you to export your anime list in any way**. This tool bridges that gap by extracting data directly from your profile page's HTML code and converting it into a "bulletproof" XML file, 100% ready to be imported into **MyAnimeList** or **AniList**.
 
----
+### 🛑 Why use this script?
+Since there is no native export feature on the platform, this script is the only alternative to securely back up your list without having to manually re-enter dozens of titles. Furthermore, direct extraction avoids the typical issues found in generic automatic parsers:
+- **No truncated titles:** It prevents long names from being cut off with ellipses, ensuring that different seasons are not overwritten or merged together in the database.
+- **Accurate statuses and progress:** Perfectly preserves the separation between currently watching (Watching), completed (Completed), dropped (Dropped), or planning to watch (Plan to Watch), along with your scores and exact episode counts.
 
-## 🇮🇹 Italiano
+### ✨ Features
+- Accurate parsing using `BeautifulSoup` on your profile's raw HTML structure.
+- Smart matching with the AniList GraphQL API to fetch the official corresponding `MAL_ID`s.
+- Automatic Rate Limit handling (the script automatically sleeps if the API throttles connections, avoiding crashes).
+- Generates a separate `orphans.json` file for anime that require manual addition due to heavy localizations or missing matches.
 
-Uno script Python per estrarre la propria lista anime direttamente dal codice HTML del profilo di **AnimeUnity** e convertirla in un file XML "corazzato", pronto al 100% per essere importato su **MyAnimeList** o **AniList**.
+### 🛠️ Installation
+Make sure you have Python 3 installed on your system. Clone the repository and install the dependencies:
 
-### 🛑 Perché usare questo script e non l'export nativo?
-Se hai provato a usare la funzione di esportazione XML integrata sul sito, avrai notato che il file generato è decisamente problematico. 
-Questo script risolve i seguenti bug critici dell'export nativo:
-- **Titoli troncati:** Il sito taglia i nomi lunghi con i puntini di sospensione (`...`). Se hai due stagioni con un nome molto lungo (es. *Attack on Titan Specials*), il database nativo le fonde insieme e cancella letteralmente degli anime dalla tua lista.
-- **Stati sballati:** Il sistema nativo sposta spesso anime che avevi in "Plan to Watch" o "Dropped" direttamente nei "Watching", rovinando le tue statistiche complessive.
-
-### ✨ Funzionalità
-- Parsing preciso usando `BeautifulSoup` sull'HTML reale del tuo profilo.
-- Matching intelligente con l'API GraphQL di AniList per recuperare i `MAL_ID` ufficiali.
-- Gestione automatica dei Rate Limit (lo script si mette in pausa se il server si arrabbia, evitando crash).
-- Generazione di un file `orphans.json` separato per gli anime che richiedono un'aggiunta manuale a causa di titoli troppo localizzati o non trovati.
-
-### 🛠️ Installazione
-Assicurati di avere Python 3 installato sul tuo sistema. Clona il repository e installa le dipendenze:
 ```bash
-git clone https://github.com/FreeKaraZero/animeunity-list-exporter.git
+git clone [https://github.com/FreeKaraZero/animeunity-list-exporter.git](https://github.com/FreeKaraZero/animeunity-list-exporter.git)
 cd animeunity-list-exporter
 pip install -r requirements.txt
