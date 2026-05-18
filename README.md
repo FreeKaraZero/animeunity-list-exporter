@@ -20,3 +20,15 @@ Make sure you have Python 3 installed on your system. Clone the repository and i
 git clone [https://github.com/FreeKaraZero/animeunity-list-exporter.git](https://github.com/FreeKaraZero/animeunity-list-exporter.git)
 cd animeunity-list-exporter
 pip install -r requirements.txt
+```
+
+### 🚀 Usage
+1. Open your browser and go to your AnimeUnity profile, specifically inside the **Anime List** section.
+2. **Download the page as an HTML file:** Right-click on any empty space on the page, select `Save As...` (or `Save Page As...`), and make sure to save the file to your computer as **"Webpage, Complete"** or **"HTML Only"**.
+3. Move the downloaded HTML file inside the project folder.
+4. Run the script by passing the filename as an argument:
+
+```bash
+python animeunity2mal.py "AnimeUnity.html" -o my_export_list.xml
+```
+5. Grab the generated `my_export_list.xml` and import it directly into [AniList](https://anilist.co/settings/import) or MyAnimeList!
