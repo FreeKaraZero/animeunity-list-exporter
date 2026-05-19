@@ -3,7 +3,7 @@ name: Compilazione Eseguibili
 on:
   push:
     branches: [ main ]
-  workflow_dispatch: # Permette di avviarlo manualmente dall'interfaccia web
+  workflow_dispatch:
 
 jobs:
   build:
