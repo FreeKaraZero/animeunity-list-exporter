@@ -31,6 +31,7 @@ Make sure you have Python 3 installed. If you are on a modern Linux distribution
 
 ```bash
 git clone https://github.com/FreeKaraZero/animeunity-list-exporter.git
+cd animeunity-list-exporter
 
 # Create and activate a virtual environment
 python -m venv .venv
@@ -88,6 +89,7 @@ Assicurati di avere Python 3 installato. Se sei su una distribuzione Linux moder
 
 ```bash
 git clone https://github.com/FreeKaraZero/animeunity-list-exporter.git
+cd animeunity-list-exporter
 
 # Crea e attiva il virtual environment
 python -m venv .venv
