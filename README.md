@@ -17,7 +17,7 @@ Since there is no native export feature on the platform, this script is the only
 Make sure you have Python 3 installed on your system. Clone the repository and install the dependencies:
 
 ```bash
-git clone [https://github.com/FreeKaraZero/animeunity-list-exporter.git](https://github.com/FreeKaraZero/animeunity-list-exporter.git)
+git clone https://github.com/FreeKaraZero/animeunity-list-exporter.git
 cd animeunity-list-exporter
 pip install -r requirements.txt
 ```
