@@ -1,9 +1,17 @@
-name: Compilazione Eseguibili
+name: Build ed Auto-Release
 
 on:
   push:
-    branches: [ main ]
-  workflow_dispatch: # Permette di avviarlo manualmente dall'interfaccia web
+    tags:
+      - 'v*'
+  workflow_dispatch:
+    inputs:
+      tag:
+        description: 'Tag per la release'
+        required: true
+
+permissions:
+  contents: write
 
 jobs:
   build:
@@ -11,33 +19,27 @@ jobs:
       matrix:
         os: [ubuntu-latest, windows-latest]
     runs-on: ${{ matrix.os }}
-
+    
     steps:
-    - name: Checkout del codice
-      uses: actions/checkout@v4
-
-    - name: Setup di Python
-      uses: actions/setup-python@v5
-      with:
-        python-version: '3.11'
-
-    - name: Installa librerie grafiche (Solo Linux)
-      if: matrix.os == 'ubuntu-latest'
-      run: |
-        sudo apt-get update
-        sudo apt-get install -y python3-tk
-
-    - name: Installa dipendenze Python
-      run: |
-        python -m pip install --upgrade pip
-        pip install -r requirements.txt
-        pip install pyinstaller customtkinter
-
-    - name: Compila il binario
-      run: pyinstaller --clean --onefile --windowed animeunity_exporter.py
-
-    - name: Estrai l'eseguibile
-      uses: actions/upload-artifact@v4
-      with:
-        name: AnimeUnity-Exporter-${{ matrix.os }}
-        path: dist/animeunity_exporter*
+      - uses: actions/checkout@v4
+      
+      - name: Setup Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+          
+      - name: Installa dipendenze
+        run: |
+          pip install -r requirements.txt
+          pip install pyinstaller customtkinter
+          
+      - name: Compila eseguibile
+        run: pyinstaller --clean --onefile --windowed animeunity_exporter.py
+        
+      - name: Pubblica su GitHub Releases
+        uses: softprops/action-gh-release@v2
+        with:
+          files: dist/animeunity_exporter*
+          generate_release_notes: true
+          draft: false
+          prerelease: false
