@@ -7,7 +7,7 @@ on:
   workflow_dispatch:
     inputs:
       tag:
-        description: 'Tag per la release'
+        description: 'Tag per la release (es. v1.0.3)'
         required: true
 
 permissions:
@@ -39,6 +39,7 @@ jobs:
       - name: Pubblica su GitHub Releases
         uses: softprops/action-gh-release@v2
         with:
+          tag_name: ${{ github.event.inputs.tag }}
           files: dist/animeunity_exporter*
           generate_release_notes: true
           draft: false
