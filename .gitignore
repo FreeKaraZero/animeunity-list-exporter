@@ -1,0 +1,14 @@
+# Ambienti virtuali
+.venv/
+venv/
+
+# PyInstaller & Cache
+build/
+dist/
+*.spec
+__pycache__/
+*.pyc
+
+# File generati dall'utente
+import_mal.xml
+orphans.json
